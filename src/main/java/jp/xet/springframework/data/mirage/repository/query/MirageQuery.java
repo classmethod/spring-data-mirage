@@ -409,9 +409,6 @@ public class MirageQuery implements RepositoryQuery {
 		Sliceable sliceable = accessor.getSliceable();
 		if (sliceable != null) {
 			addSliceParam(parameterMap, sliceable);
-		} else if (accessor.getSort() != null) {
-			Sort sort = accessor.getSort();
-			addSortParam(parameterMap, sort);
 		}
 		
 		List<?> resultList = sqlManager.getResultList(returnedDomainType, sqlResource, parameterMap);

@@ -53,10 +53,10 @@ import jp.xet.springframework.data.mirage.repository.TestConfiguration;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestConfiguration.class)
 @Transactional
-public class TaskRepositoryTest_NoSqlFile {
+public class TaskSliceableRepositoryTest_NoSqlFile {
 	
 	@Autowired
-	TaskRepository repos;
+	TaskSliceableRepository repos;
 	
 	
 	@Test

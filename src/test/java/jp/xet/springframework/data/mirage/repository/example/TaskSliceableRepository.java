@@ -21,5 +21,5 @@ import jp.xet.sparwings.spring.data.repository.WritableRepository;
 /**
  * SliceableRepository のメソッド定義無し.
  */
-public interface TaskRepository extends WritableRepository<Task, String>, SliceableRepository<Task, String> {
+public interface TaskSliceableRepository extends WritableRepository<Task, String>, SliceableRepository<Task, String> {
 }
