@@ -408,6 +408,7 @@ public class MirageQuery implements RepositoryQuery {
 			Class<?> returnedDomainType, SliceableParameterAccessor accessor) {
 		Sliceable sliceable = accessor.getSliceable();
 		if (sliceable != null) {
+			sliceable.validate();
 			addSliceParam(parameterMap, sliceable);
 		}
 		

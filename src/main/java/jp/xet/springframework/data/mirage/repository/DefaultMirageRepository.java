@@ -334,6 +334,7 @@ public class DefaultMirageRepository<E, ID extends Serializable> implements Scan
 		}
 		
 		try {
+			sliceable.validate();
 			Map<String, Object> parameter = createParams(sliceable);
 			List<E> result = getResultList(getBaseSelectSqlResource(), parameter);
 			

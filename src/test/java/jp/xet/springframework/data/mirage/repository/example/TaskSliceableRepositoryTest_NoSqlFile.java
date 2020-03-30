@@ -16,6 +16,7 @@
 package jp.xet.springframework.data.mirage.repository.example;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import jp.xet.sparwings.spring.data.exceptions.InvalidSliceableException;
 import jp.xet.sparwings.spring.data.slice.Slice;
 import jp.xet.sparwings.spring.data.slice.SliceRequest;
 import jp.xet.sparwings.spring.data.slice.Sliceable;
@@ -115,6 +117,19 @@ public class TaskSliceableRepositoryTest_NoSqlFile {
 		assertThat(nextActual).hasSize(1);
 		assertThat(nextActual.getContent().get(0)).isEqualTo(task1);
 		assertThat(nextActual.hasNext()).isFalse();
+	}
+	
+	@Test
+	public void testFindAll_InvalidSliceable() {
+		// setup
+		Sliceable sliceable = new SliceRequest(1, Sort.Direction.ASC, 1001);
+		
+		// exercise
+		Throwable actual = catchThrowable(() -> repos.findAll(sliceable));
+		
+		// verify
+		assertThat(actual).isInstanceOfSatisfying(InvalidSliceableException.class,
+				e -> assertThat(e.getMessage()).isEqualTo("Cannot get elements beyond 2000."));
 	}
 	
 	private Task createTask(String taskId, String taskName, Long deadline) {
