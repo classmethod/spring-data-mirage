@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import jp.xet.sparwings.spring.data.chunk.Chunk;
+import jp.xet.sparwings.spring.data.slice.Slice;
 
 /**
  * TODO for daisuke
@@ -118,6 +119,15 @@ public class MirageQueryMethod extends QueryMethod {
 	 */
 	public boolean isChunkQuery() {
 		return !isPageQuery() && org.springframework.util.ClassUtils.isAssignable(Chunk.class, unwrappedReturnType);
+	}
+	
+	/**
+	 * Slice 形式の Query か？
+	 * @return Slice 形式の Query の場合、true
+	 */
+	@Override
+	public boolean isSliceQuery() {
+		return !isPageQuery() && org.springframework.util.ClassUtils.isAssignable(Slice.class, unwrappedReturnType);
 	}
 	
 	/**

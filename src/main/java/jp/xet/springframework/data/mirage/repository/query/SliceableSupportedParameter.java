@@ -18,26 +18,17 @@ package jp.xet.springframework.data.mirage.repository.query;
 import org.springframework.core.MethodParameter;
 import org.springframework.data.repository.query.Parameter;
 
-import jp.xet.sparwings.spring.data.chunk.Chunkable;
+import jp.xet.sparwings.spring.data.slice.Sliceable;
 
 /**
- * TODO for daisuke
- * 
- * @since TODO for daisuke
- * @version $Id$
- * @author daisuke
+ * Sliceable をサポートするパラメータ.
  */
-public class ChunkableSupportedParameter extends Parameter {
+public class SliceableSupportedParameter extends Parameter {
 	
 	private MethodParameter parameter;
 	
 	
-	/**
-	 * インスタンスを生成する。
-	 * 
-	 * @param parameter
-	 */
-	public ChunkableSupportedParameter(MethodParameter parameter) {
+	public SliceableSupportedParameter(MethodParameter parameter) {
 		super(parameter);
 		this.parameter = parameter;
 	}
@@ -48,11 +39,11 @@ public class ChunkableSupportedParameter extends Parameter {
 	}
 	
 	/**
-	 * Returns whether the {@link Parameter} is a {@link Chunkable} parameter.
+	 * Returns whether the {@link Parameter} is a {@link Sliceable} parameter.
 	 * 
-	 * @return
+	 * @return Sliceable のパラメータを保持している場合、true
 	 */
-	boolean isChunkable() {
-		return Chunkable.class.isAssignableFrom(getType());
+	boolean isSliceable() {
+		return Sliceable.class.isAssignableFrom(getType());
 	}
 }
