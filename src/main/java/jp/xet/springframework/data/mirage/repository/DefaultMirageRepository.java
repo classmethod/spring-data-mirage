@@ -69,7 +69,11 @@ import jp.xet.sparwings.spring.data.repository.ChunkableRepository;
 import jp.xet.sparwings.spring.data.repository.LockableCrudRepository;
 import jp.xet.sparwings.spring.data.repository.PageableRepository;
 import jp.xet.sparwings.spring.data.repository.ScannableRepository;
+import jp.xet.sparwings.spring.data.repository.SliceableRepository;
 import jp.xet.sparwings.spring.data.repository.TruncatableRepository;
+import jp.xet.sparwings.spring.data.slice.Slice;
+import jp.xet.sparwings.spring.data.slice.SliceImpl;
+import jp.xet.sparwings.spring.data.slice.Sliceable;
 
 /**
  * Mirage SQLを利用した repository 実装クラス。
@@ -81,7 +85,8 @@ import jp.xet.sparwings.spring.data.repository.TruncatableRepository;
  */
 public class DefaultMirageRepository<E, ID extends Serializable> implements ScannableRepository<E, ID>,
 		BatchReadableRepository<E, ID>, BatchWritableRepository<E, ID>, LockableCrudRepository<E, ID>,
-		ChunkableRepository<E, ID>, PageableRepository<E, ID>, TruncatableRepository<E, ID> {
+		ChunkableRepository<E, ID>, PageableRepository<E, ID>, SliceableRepository<E, ID>,
+		TruncatableRepository<E, ID> {
 	
 	private static Logger log = LoggerFactory.getLogger(DefaultMirageRepository.class);
 	
@@ -314,6 +319,34 @@ public class DefaultMirageRepository<E, ID extends Serializable> implements Scan
 			List<E> result = getResultList(getBaseSelectSqlResource(), createParams(pageable));
 			Long foundRows = getFoundRows();
 			return new PageImpl<E>(result, pageable, foundRows != null ? foundRows : count());
+		} catch (SQLRuntimeException e) {
+			throw getExceptionTranslator().translate("findAll", null, e.getCause());
+		}
+	}
+	
+	@Override
+	public Slice<E> findAll(Sliceable sliceable) {
+		if (null == sliceable) {
+			return new SliceImpl<>(newArrayList(findAll()), null, false);
+		}
+		
+		try {
+			sliceable.validate();
+			Map<String, Object> parameter = createParams(sliceable);
+			List<E> result = getResultList(getBaseSelectSqlResource(), parameter);
+			
+			boolean hasNext = false;
+			Integer size = (Integer) parameter.get("size");
+			if (size != null) {
+				if (size == result.size()) {
+					// パラメータの size は Sliceable#getMaxContentSize() + 1 にしているので、
+					// それと同じ件数の場合は、次ページ有り & result の要素を切り詰める
+					hasNext = true;
+					result = result.subList(0, sliceable.getMaxContentSize());
+				}
+			}
+			
+			return new SliceImpl<>(result, sliceable, hasNext);
 		} catch (SQLRuntimeException e) {
 			throw getExceptionTranslator().translate("findAll", null, e.getCause());
 		}
@@ -557,6 +590,17 @@ public class DefaultMirageRepository<E, ID extends Serializable> implements Scan
 	protected Map<String, Object> createParams(Pageable pageable) {
 		Map<String, Object> params = createParams();
 		addPageParam(params, pageable);
+		return params;
+	}
+	
+	/**
+	 * Slice のパラメータ作成.
+	 * @param sliceable Sliceable
+	 * @return パラメータ
+	 */
+	protected Map<String, Object> createParams(Sliceable sliceable) {
+		Map<String, Object> params = createParams();
+		addSliceParam(params, sliceable);
 		return params;
 	}
 	
@@ -913,6 +957,12 @@ public class DefaultMirageRepository<E, ID extends Serializable> implements Scan
 				params.put("orders", join(orders));
 			}
 		}
+	}
+	
+	private void addSliceParam(Map<String, Object> params, Sliceable sliceable) {
+		params.put("offset", sliceable == null ? null : sliceable.getOffset());
+		params.put("size", sliceable == null ? null : sliceable.getMaxContentSize() + 1); // +1 することで次ページの存在を判定
+		params.put("direction", sliceable == null ? null : sliceable.getDirection().name());
 	}
 	
 	private void addSortParam(Map<String, Object> params, Sort sort) {

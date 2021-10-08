@@ -34,7 +34,6 @@ import java.util.Optional;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
@@ -55,6 +54,8 @@ import jp.xet.sparwings.spring.data.chunk.Chunkable;
 import jp.xet.sparwings.spring.data.chunk.Chunkable.PaginationRelation;
 import jp.xet.sparwings.spring.data.chunk.PaginationTokenEncoder;
 import jp.xet.sparwings.spring.data.chunk.SimplePaginationTokenEncoder;
+import jp.xet.sparwings.spring.data.slice.SliceImpl;
+import jp.xet.sparwings.spring.data.slice.Sliceable;
 
 import jp.xet.springframework.data.mirage.repository.ScopeClasspathSqlResource;
 import jp.xet.springframework.data.mirage.repository.SqlResourceCandidate;
@@ -103,6 +104,15 @@ public class MirageQuery implements RepositoryQuery {
 			Sort sort = pageable.getSort();
 			addSortParam(params, sort);
 		}
+	}
+	
+	private static void addSliceParam(Map<String, Object> params, Sliceable sliceable) {
+		if (sliceable == null) {
+			return;
+		}
+		params.put("offset", sliceable.getOffset());
+		params.put("size", sliceable.getMaxContentSize() + 1); // +1 することで次ページの存在を判定
+		params.put("direction", sliceable.getDirection().name());
 	}
 	
 	private static void addSortParam(Map<String, Object> params, Sort sort) {
@@ -195,7 +205,11 @@ public class MirageQuery implements RepositoryQuery {
 		} else if (mirageQueryMethod.isChunkQuery()) {
 			return processChunkQuery(sqlResource, parameterMap, returnedDomainType, accessor);
 		} else if (mirageQueryMethod.isSliceQuery()) {
-			return processSliceQuery(sqlResource, parameterMap, returnedDomainType, accessor);
+			SliceableSupportedParameters sliceableSupportedParameters =
+					new SliceableSupportedParameters(mirageQueryMethod.asMethod());
+			SliceableParameterAccessor sliceAccessor =
+					new ParameterSliceableParameterAccessor(sliceableSupportedParameters, parameters);
+			return processSliceQuery(sqlResource, parameterMap, returnedDomainType, sliceAccessor);
 		} else if (mirageQueryMethod.isPageQuery()) {
 			return processPageQuery(sqlResource, parameterMap, returnedDomainType, accessor);
 		} else {
@@ -243,7 +257,8 @@ public class MirageQuery implements RepositoryQuery {
 			p.getName().ifPresent(parameterName -> parameterMap.put(parameterName, parameters[p.getIndex()]));
 			if (p.getName().isPresent() == false) {
 				if (Pageable.class.isAssignableFrom(p.getType()) == false
-						&& Chunkable.class.isAssignableFrom(p.getType()) == false) {
+						&& Chunkable.class.isAssignableFrom(p.getType()) == false
+						&& Sliceable.class.isAssignableFrom(p.getType()) == false) {
 					log.warn("null name parameter [{}] is ignored", p);
 				}
 			}
@@ -387,22 +402,27 @@ public class MirageQuery implements RepositoryQuery {
 	}
 	
 	private Object processSliceQuery(SqlResource sqlResource, Map<String, Object> parameterMap,
-			Class<?> returnedDomainType, ChunkableParameterAccessor accessor) {
-		Pageable pageable = accessor.getPageable();
-		if (pageable != null) {
-			addPageParam(parameterMap, pageable);
-		} else if (accessor.getSort() != null) {
-			Sort sort = accessor.getSort();
-			addSortParam(parameterMap, sort);
+			Class<?> returnedDomainType, SliceableParameterAccessor accessor) {
+		Sliceable sliceable = accessor.getSliceable();
+		if (sliceable != null) {
+			sliceable.validate();
+			addSliceParam(parameterMap, sliceable);
 		}
 		
 		List<?> resultList = sqlManager.getResultList(returnedDomainType, sqlResource, parameterMap);
+		boolean hasNext = false;
+		Integer size = (Integer) parameterMap.get("size");
+		if (size != null && size == resultList.size()) {
+			// パラメータの size は Sliceable#getMaxContentSize() + 1 にしているので、
+			// それと同じ件数の場合は、次ページ有り & result の要素を切り詰める
+			hasNext = true;
+			resultList = resultList.subList(0, sliceable.getMaxContentSize());
+		}
 		
 		if (List.class.isAssignableFrom(mirageQueryMethod.getReturnType())) {
 			return resultList;
 		}
-		
-		return new SliceImpl<>(resultList, pageable, true/*TODO*/);
+		return new SliceImpl<>(resultList, sliceable, hasNext);
 	}
 	
 	private String toString(Reader input) throws IOException {
