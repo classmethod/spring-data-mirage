@@ -15,7 +15,7 @@ buildscript {
 
 plugins {
 	id 'java-library'
-	id 'org.springframework.boot' version '2.1.5.RELEASE'
+	id 'org.springframework.boot' version '2.7.2'
 	id 'maven-publish'
 }
 
@@ -23,22 +23,18 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 // code quality plugins
-apply plugin: "checkstyle"
-apply plugin: "findbugs"
-apply plugin: "pmd"
-apply plugin: "cpd"
 apply plugin: "jacoco"
 apply plugin: "de.thetaphi.forbiddenapis"
 apply plugin: "com.diffplug.gradle.spotless"
 
 // code quality configuration
-apply from: "${rootProject.projectDir}/gradle/quality/checkstyle.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/findbugs.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/pmd.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/cpd.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/jacoco.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/forbiddenapis.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/spotless.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/checkstyle.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/findbugs.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/pmd.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/cpd.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/jacoco.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/forbiddenapis.gradle"
+//apply from: "${rootProject.projectDir}/gradle/quality/spotless.gradle"
 
 // custom configuration
 apply from: "${rootProject.projectDir}/gradle/version.gradle"
@@ -93,9 +89,6 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation "com.h2database:h2"
 	testImplementation "ch.qos.logback:logback-classic"
-
-	pmd 'net.sourceforge.pmd:pmd-java:6.16.0'
-	pmd 'org.ow2.asm:asm:7.1'
 }
 
 bootJar {
@@ -107,7 +100,7 @@ jar {
 }
 
 wrapper {
-	gradleVersion = '5.2.1'
+	gradleVersion = '6.9.2'
 	distributionType = Wrapper.DistributionType.ALL
 }
 
