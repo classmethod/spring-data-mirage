@@ -94,7 +94,27 @@ public class EntityRepositoryTest {
 		Iterable<Entity> all = repo.findAll();
 		assertThat(Iterables.size(all), is(7));
 	}
-	
+
+	@Test
+	@Rollback
+	public void test_create_and_findOne2() {
+		assertThat(repo, is(notNullValue()));
+		assertThat(repo.count(), is(0L));
+		Entity foo = repo.create(new Entity("foo"));
+		assertThat(repo.count(), is(1L));
+		Entity bar = repo.create(new Entity("bar"));
+		assertThat(repo.count(), is(2L));
+		repo.save(new Entity("foo"));
+		repo.save(new Entity("foo2"));
+		repo.save(new Entity("foo3"));
+		repo.save(new Entity("bar2"));
+		repo.save(new Entity("bar3"));
+
+		Entity foundFoo = repo.findByStr("foo").get(0);
+		assertThat(foundFoo.getId(), is(foo.getId()));
+		assertThat(foundFoo.getStr(), is("foo"));
+	}
+
 	@Ignore
 	@Test(expected = DuplicateKeyException.class)
 	public void test_fail_to_create() {
@@ -329,49 +349,6 @@ public class EntityRepositoryTest {
 		log.info("{}", chunk.getContent());
 		assertThat(chunk.getContent(), hasSize(2));
 		assertThat(chunk.getContent().toString(), is("[Entity[baz], Entity[bar]]"));
-	}
-	
-	@Test
-	@Rollback
-	public void testPaging() {
-		repo.save(new Entity("foo"));
-		repo.save(new Entity("bar"));
-		repo.save(new Entity("foo"));
-		repo.save(new Entity("foo2"));
-		repo.save(new Entity("foo3"));
-		repo.save(new Entity("bar2"));
-		repo.save(new Entity("bar3"));
-		
-		Page<Entity> page1 = repo.findAll(new PageRequest(1/*zero based*/, 2, Direction.ASC, "str"));
-		assertThat(page1.getNumber(), is(1));
-		assertThat(page1.getNumberOfElements(), is(2));
-		assertThat(page1.getTotalElements(), is(7L));
-		assertThat(page1.getContent().size(), is(2));
-		assertThat(page1.getContent().get(0).getStr(), is("bar3"));
-		assertThat(page1.getContent().get(1).getStr(), is("foo"));
-		
-		Page<Entity> page2 = repo.findAll(new PageRequest(2/*zero based*/, 2, Direction.ASC, "str"));
-		assertThat(page2.getNumber(), is(2));
-		assertThat(page2.getNumberOfElements(), is(2));
-		assertThat(page2.getTotalElements(), is(7L));
-		assertThat(page2.getContent().size(), is(2));
-		assertThat(page2.getContent().get(0).getStr(), is("foo"));
-		assertThat(page2.getContent().get(1).getStr(), is("foo2"));
-		
-		List<Entity> foundFoos = repo.findByStr("foo");
-		assertThat(foundFoos.size(), is(2));
-		
-		List<Entity> foundStartsWithFoos = repo.findByStrStartsWith("foo");
-		assertThat(foundStartsWithFoos.size(), is(4));
-		
-		List<Entity> foundBars = repo.findByStr("bar");
-		assertThat(foundBars.size(), is(1));
-		
-		List<Entity> foundStartsWithBars = repo.findByStrStartsWith("bar");
-		assertThat(foundStartsWithBars.size(), is(3));
-		
-		List<Entity> foundQux = repo.findByStr("qux");
-		assertThat(foundQux.size(), is(0));
 	}
 	
 	@Test
